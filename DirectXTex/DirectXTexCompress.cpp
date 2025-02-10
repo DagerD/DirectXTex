@@ -17,6 +17,7 @@
 #endif
 
 #include "BC.h"
+#include <fstream>
 
 using namespace DirectX;
 using namespace DirectX::Internal;
@@ -488,8 +489,21 @@ namespace
         XM_ALIGNED_DATA(16) XMVECTOR temp[16];
         const uint8_t *pSrc = cImage.pixels;
         const size_t rowPitch = result.rowPitch;
+
+        const int block_size = 16;
+        const int blocks_x = cImage.width / 4;
+        const int blocks_y = cImage.height / 4;
+        const int U64_PER_BLOCK_BC7 = 2;
+
+        std::vector<uint8_t> blocks(blocks_x * blocks_y);
+        std::vector<uint64_t> blocks_mininn(blocks_x * blocks_y * U64_PER_BLOCK_BC7);
+
+        std::ofstream out;
+        out.open("C:/Projects/ML/AMD/MiniNn/Resources/img/ganges_river_pebbles_arm_1k.bin", std::ios::out | std::ios::binary);
+        int count_loops = 0;
         for (size_t h = 0; h < cImage.height; h += 4)
         {
+            count_loops++;
             const uint8_t *sptr = pSrc;
             uint8_t* dptr = pDest;
             const size_t ph = std::min<size_t>(4, cImage.height - h);
@@ -522,7 +536,7 @@ namespace
                         }
                     }
                 }
-
+                
                 sptr += sbpp;
                 dptr += dbpp * 4;
             }
@@ -530,6 +544,23 @@ namespace
             pSrc += cImage.rowPitch;
             pDest += rowPitch * 4;
         }
+
+        for (int j = 0; j < blocks_y; j++)
+        {
+            for (int i = 0; i < blocks_x; i++)
+            {
+                const int blockIdx = i + j * blocks_x;
+                std::memcpy(&blocks_mininn[U64_PER_BLOCK_BC7 * blockIdx], cImage.pixels + blockIdx * block_size, sizeof(uint8_t) * block_size);
+            }
+        }
+
+        out.write(reinterpret_cast<const char*>(&cImage.width), sizeof(uint32_t));
+        out.write(reinterpret_cast<const char*>(&cImage.height), sizeof(uint32_t));
+        //out.write(reinterpret_cast<const char*>(cImage.pixels), sizeof(uint8_t) * result.rowPitch * cImage.height / 4);
+        out.write(reinterpret_cast<const char*>(blocks_mininn.data()), sizeof(uint64_t) * blocks_mininn.size());
+
+        printf("\r\n %i \r\n", count_loops);
+        out.close();
 
         return S_OK;
     }
