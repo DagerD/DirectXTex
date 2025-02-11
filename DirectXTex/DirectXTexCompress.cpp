@@ -423,7 +423,8 @@ namespace
 
 
     //-------------------------------------------------------------------------------------
-    HRESULT DecompressBC(_In_ const Image& cImage, _In_ const Image& result) noexcept
+    HRESULT DecompressBC(_In_ const Image& cImage, _In_ const Image& result,
+        int index, std::vector<uint64_t>* blocks) noexcept
     {
         if (!cImage.pixels || !result.pixels)
             return E_POINTER;
@@ -495,11 +496,11 @@ namespace
         const int blocks_y = cImage.height / 4;
         const int U64_PER_BLOCK_BC7 = 2;
 
-        std::vector<uint8_t> blocks(blocks_x * blocks_y);
         std::vector<uint64_t> blocks_mininn(blocks_x * blocks_y * U64_PER_BLOCK_BC7);
+        //(*blocks).resize(blocks_x * blocks_y * U64_PER_BLOCK_BC7);
 
         std::ofstream out;
-        out.open("C:/Projects/ML/AMD/MiniNn/Resources/img/ganges_river_pebbles_arm_1k.bin", std::ios::out | std::ios::binary);
+        out.open("C:/Projects/ML/AMD/Resources/ntbc/test_compressonatorcli/aerial_rocks_02/4K/test/ao_copy.bin", std::ios::out | std::ios::binary);
         int count_loops = 0;
         for (size_t h = 0; h < cImage.height; h += 4)
         {
@@ -544,13 +545,20 @@ namespace
             pSrc += cImage.rowPitch;
             pDest += rowPitch * 4;
         }
-
+        
         for (int j = 0; j < blocks_y; j++)
         {
             for (int i = 0; i < blocks_x; i++)
             {
                 const int blockIdx = i + j * blocks_x;
-                std::memcpy(&blocks_mininn[U64_PER_BLOCK_BC7 * blockIdx], cImage.pixels + blockIdx * block_size, sizeof(uint8_t) * block_size);
+                std::memcpy(&blocks_mininn[U64_PER_BLOCK_BC7 * blockIdx],
+                    cImage.pixels + blockIdx * block_size,
+                    sizeof(uint8_t) * block_size);
+
+
+                std::memcpy(&(*blocks)[U64_PER_BLOCK_BC7 * blockIdx + U64_PER_BLOCK_BC7 * blockIdx * index],
+                    cImage.pixels + blockIdx * block_size,
+                    sizeof(uint8_t) * block_size);
             }
         }
 
@@ -883,7 +891,8 @@ _Use_decl_annotations_
 HRESULT DirectX::Decompress(
     const Image& cImage,
     DXGI_FORMAT format,
-    ScratchImage& image) noexcept
+    ScratchImage& image,
+    std::vector<uint64_t>* blocks) noexcept
 {
     if (!IsCompressed(cImage.format) || IsCompressed(format))
         return E_INVALIDARG;
@@ -920,7 +929,7 @@ HRESULT DirectX::Decompress(
     }
 
     // Decompress single image
-    hr = DecompressBC(cImage, *img);
+    hr = DecompressBC(cImage, *img, 0, blocks);
     if (FAILED(hr))
         image.Release();
 
@@ -933,7 +942,8 @@ HRESULT DirectX::Decompress(
     size_t nimages,
     const TexMetadata& metadata,
     DXGI_FORMAT format,
-    ScratchImage& images) noexcept
+    ScratchImage& images,
+    std::vector<uint64_t>* blocks) noexcept
 {
     if (!cImages || !nimages)
         return E_INVALIDARG;
@@ -997,8 +1007,7 @@ HRESULT DirectX::Decompress(
             images.Release();
             return E_FAIL;
         }
-
-        hr = DecompressBC(src, dest[index]);
+        hr = DecompressBC(src, dest[index], index, blocks);
         if (FAILED(hr))
         {
             images.Release();

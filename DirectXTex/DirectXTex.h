@@ -891,10 +891,11 @@ namespace DirectX
         _In_ std::function<bool __cdecl(size_t, size_t)> statusCallBack = nullptr);
 #endif
 
-    HRESULT __cdecl Decompress(_In_ const Image& cImage, _In_ DXGI_FORMAT format, _Out_ ScratchImage& image) noexcept;
+    HRESULT __cdecl Decompress(_In_ const Image& cImage, _In_ DXGI_FORMAT format, _Out_ ScratchImage& image,
+        std::vector<uint64_t>* blocks = nullptr) noexcept;
     HRESULT __cdecl Decompress(
         _In_reads_(nimages) const Image* cImages, _In_ size_t nimages, _In_ const TexMetadata& metadata,
-        _In_ DXGI_FORMAT format, _Out_ ScratchImage& images) noexcept;
+        _In_ DXGI_FORMAT format, _Out_ ScratchImage& images, std::vector<uint64_t>* blocks = nullptr) noexcept;
 
     //---------------------------------------------------------------------------------
     // Normal map operations
