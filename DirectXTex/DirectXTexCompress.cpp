@@ -424,7 +424,7 @@ namespace
 
     //-------------------------------------------------------------------------------------
     HRESULT DecompressBC(_In_ const Image& cImage, _In_ const Image& result,
-        int index, std::vector<uint64_t>* blocks) noexcept
+        int index, std::vector<std::vector<uint64_t>>* blocks) noexcept
     {
         if (!cImage.pixels || !result.pixels)
             return E_POINTER;
@@ -496,15 +496,14 @@ namespace
         const int blocks_y = cImage.height / 4;
         const int U64_PER_BLOCK_BC7 = 2;
 
-        std::vector<uint64_t> blocks_mininn(blocks_x * blocks_y * U64_PER_BLOCK_BC7);
+        //std::vector<uint64_t> blocks_mininn(blocks_x * blocks_y * U64_PER_BLOCK_BC7);
         //(*blocks).resize(blocks_x * blocks_y * U64_PER_BLOCK_BC7);
 
-        std::ofstream out;
-        out.open("C:/Projects/ML/AMD/Resources/ntbc/test_compressonatorcli/aerial_rocks_02/4K/test/ao_copy.bin", std::ios::out | std::ios::binary);
-        int count_loops = 0;
+        //std::ofstream out;
+        //out.open("C:/Projects/ML/AMD/Resources/ntbc/test_compressonatorcli/aerial_rocks_02/4K/test/ao_copy.bin", std::ios::out | std::ios::binary);
+
         for (size_t h = 0; h < cImage.height; h += 4)
         {
-            count_loops++;
             const uint8_t *sptr = pSrc;
             uint8_t* dptr = pDest;
             const size_t ph = std::min<size_t>(4, cImage.height - h);
@@ -545,30 +544,28 @@ namespace
             pSrc += cImage.rowPitch;
             pDest += rowPitch * 4;
         }
-        
+
+        (*blocks)[index].resize(blocks_y * blocks_x * U64_PER_BLOCK_BC7);
+
         for (int j = 0; j < blocks_y; j++)
         {
             for (int i = 0; i < blocks_x; i++)
             {
                 const int blockIdx = i + j * blocks_x;
-                std::memcpy(&blocks_mininn[U64_PER_BLOCK_BC7 * blockIdx],
-                    cImage.pixels + blockIdx * block_size,
-                    sizeof(uint8_t) * block_size);
+                //std::memcpy(&blocks_mininn[U64_PER_BLOCK_BC7 * blockIdx],
+                //    cImage.pixels + blockIdx * block_size,
+                //    sizeof(uint8_t) * block_size);
 
-
-                std::memcpy(&(*blocks)[U64_PER_BLOCK_BC7 * blockIdx + U64_PER_BLOCK_BC7 * blockIdx * index],
+                std::memcpy(&((*blocks)[index])[U64_PER_BLOCK_BC7 * blockIdx],
                     cImage.pixels + blockIdx * block_size,
                     sizeof(uint8_t) * block_size);
             }
         }
 
-        out.write(reinterpret_cast<const char*>(&cImage.width), sizeof(uint32_t));
-        out.write(reinterpret_cast<const char*>(&cImage.height), sizeof(uint32_t));
+        //out.write(reinterpret_cast<const char*>(&cImage.width), sizeof(uint32_t));
+        //out.write(reinterpret_cast<const char*>(&cImage.height), sizeof(uint32_t));
         //out.write(reinterpret_cast<const char*>(cImage.pixels), sizeof(uint8_t) * result.rowPitch * cImage.height / 4);
-        out.write(reinterpret_cast<const char*>(blocks_mininn.data()), sizeof(uint64_t) * blocks_mininn.size());
-
-        printf("\r\n %i \r\n", count_loops);
-        out.close();
+        //out.write(reinterpret_cast<const char*>(blocks_mininn.data()), sizeof(uint64_t) * blocks_mininn.size());
 
         return S_OK;
     }
@@ -892,7 +889,7 @@ HRESULT DirectX::Decompress(
     const Image& cImage,
     DXGI_FORMAT format,
     ScratchImage& image,
-    std::vector<uint64_t>* blocks) noexcept
+    std::vector<std::vector<uint64_t>>* blocks) noexcept
 {
     if (!IsCompressed(cImage.format) || IsCompressed(format))
         return E_INVALIDARG;
@@ -943,7 +940,7 @@ HRESULT DirectX::Decompress(
     const TexMetadata& metadata,
     DXGI_FORMAT format,
     ScratchImage& images,
-    std::vector<uint64_t>* blocks) noexcept
+    std::vector<std::vector<uint64_t>>* blocks) noexcept
 {
     if (!cImages || !nimages)
         return E_INVALIDARG;
@@ -990,6 +987,8 @@ HRESULT DirectX::Decompress(
         images.Release();
         return E_POINTER;
     }
+
+    blocks->resize(nimages);
 
     for (size_t index = 0; index < nimages; ++index)
     {

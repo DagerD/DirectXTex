@@ -2343,7 +2343,7 @@ int __cdecl wmain(_In_ int argc, _In_z_count_(argc) wchar_t* argv[])
                 wprintf(L"\nERROR: Memory allocation failed\n");
                 return 1;
             }
-            std::vector<uint64_t> blocks;
+            std::vector<std::vector<uint64_t>> blocks(0);
             hr = Decompress(img, nimg, info, DXGI_FORMAT_UNKNOWN /* picks good default */, *timage, &blocks);
             if (FAILED(hr))
             {
