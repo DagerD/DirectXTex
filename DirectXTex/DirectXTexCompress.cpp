@@ -424,7 +424,7 @@ namespace
 
     //-------------------------------------------------------------------------------------
     HRESULT DecompressBC(_In_ const Image& cImage, _In_ const Image& result,
-        int index, std::vector<std::vector<uint64_t>>* blocks) noexcept
+        int index, std::vector<uint64_t>* blocks) noexcept
     {
         if (!cImage.pixels || !result.pixels)
             return E_POINTER;
@@ -545,7 +545,12 @@ namespace
             pDest += rowPitch * 4;
         }
 
-        (*blocks)[index].resize(blocks_y * blocks_x * U64_PER_BLOCK_BC7);
+        /*if (index < (*blocks).size())
+        {
+            (*blocks)[index].resize(blocks_y * blocks_x * U64_PER_BLOCK_BC7);
+        }*/
+
+        (*blocks).resize(blocks_y * blocks_x * U64_PER_BLOCK_BC7);
 
         for (int j = 0; j < blocks_y; j++)
         {
@@ -556,7 +561,13 @@ namespace
                 //    cImage.pixels + blockIdx * block_size,
                 //    sizeof(uint8_t) * block_size);
 
-                std::memcpy(&((*blocks)[index])[U64_PER_BLOCK_BC7 * blockIdx],
+                /*if (index < (*blocks).size())
+                {
+                    std::memcpy(&((*blocks)[index])[U64_PER_BLOCK_BC7 * blockIdx],
+                        cImage.pixels + blockIdx * block_size,
+                        sizeof(uint8_t) * block_size);
+                }*/
+                std::memcpy(&(*blocks)[U64_PER_BLOCK_BC7 * blockIdx],
                     cImage.pixels + blockIdx * block_size,
                     sizeof(uint8_t) * block_size);
             }
@@ -889,7 +900,7 @@ HRESULT DirectX::Decompress(
     const Image& cImage,
     DXGI_FORMAT format,
     ScratchImage& image,
-    std::vector<std::vector<uint64_t>>* blocks) noexcept
+    std::vector<uint64_t>* blocks) noexcept
 {
     if (!IsCompressed(cImage.format) || IsCompressed(format))
         return E_INVALIDARG;
@@ -940,7 +951,7 @@ HRESULT DirectX::Decompress(
     const TexMetadata& metadata,
     DXGI_FORMAT format,
     ScratchImage& images,
-    std::vector<std::vector<uint64_t>>* blocks) noexcept
+    std::vector<uint64_t>* blocks) noexcept
 {
     if (!cImages || !nimages)
         return E_INVALIDARG;
@@ -988,8 +999,6 @@ HRESULT DirectX::Decompress(
         return E_POINTER;
     }
 
-    blocks->resize(nimages);
-
     for (size_t index = 0; index < nimages; ++index)
     {
         assert(dest[index].format == format);
@@ -1006,7 +1015,10 @@ HRESULT DirectX::Decompress(
             images.Release();
             return E_FAIL;
         }
-        hr = DecompressBC(src, dest[index], index, blocks);
+        if (index == 0)
+        {
+            hr = DecompressBC(src, dest[index], index, blocks);
+        }
         if (FAILED(hr))
         {
             images.Release();
