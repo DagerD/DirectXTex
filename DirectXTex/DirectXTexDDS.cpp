@@ -12,6 +12,7 @@
 #include "DirectXTexP.h"
 
 #include "DDS.h"
+#include <string>
 
 using namespace DirectX;
 using namespace DirectX::Internal;
@@ -2551,6 +2552,12 @@ HRESULT DirectX::SaveToDDSFile(
 #if (_WIN32_WINNT >= _WIN32_WINNT_WIN8)
     ScopedHandle hFile(safe_handle(CreateFile2(szFile,
         GENERIC_WRITE | DELETE, 0, CREATE_ALWAYS, nullptr)));
+
+    std::wstring binFile = szFile;
+    binFile = binFile.substr(0, binFile.find_last_of('.')) + L".bin";
+
+    ScopedHandle hBinFile(safe_handle(CreateFile2(binFile.c_str(),
+        GENERIC_WRITE | DELETE, 0, CREATE_ALWAYS, nullptr)));
 #else
     ScopedHandle hFile(safe_handle(CreateFileW(szFile,
         GENERIC_WRITE | DELETE, 0, nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr)));
@@ -2618,6 +2625,11 @@ HRESULT DirectX::SaveToDDSFile(
                         if (bytesWritten != ddsSlicePitch)
                         {
                             return E_FAIL;
+                        }
+
+                        if (!WriteFile(hBinFile.get(), images[index].pixels, static_cast<DWORD>(ddsSlicePitch), &bytesWritten, nullptr))
+                        {
+                            return HRESULT_FROM_WIN32(GetLastError());
                         }
                     #else
                         outFile.write(reinterpret_cast<char*>(images[index].pixels), static_cast<std::streamsize>(ddsSlicePitch));
