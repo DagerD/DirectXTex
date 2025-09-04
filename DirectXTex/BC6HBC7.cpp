@@ -2800,25 +2800,35 @@ void D3DX_BC7::Encode(uint32_t flags, const HDRColorA* const pIn) noexcept
 
     const bool bHasAlpha = (alphaMask != 0xFF);
 
-    for (EP.uMode = 0; EP.uMode < 8 && fMSEBest > 0; ++EP.uMode)
+    for (EP.uMode = 0; EP.uMode < 4 && fMSEBest > 0; ++EP.uMode)
     {
-        if (!(flags & BC_FLAGS_USE_3SUBSETS) && (EP.uMode == 0 || EP.uMode == 2))
-        {
-            // 3 subset modes tend to be used rarely and add significant compression time
-            continue;
-        }
+        //if (!(flags & BC_FLAGS_USE_3SUBSETS) && (EP.uMode == 0 || EP.uMode == 2))
+        //{
+        //    // 3 subset modes tend to be used rarely and add significant compression time
+        //    continue;
+        //}
 
-        if ((flags & TEX_COMPRESS_BC7_QUICK) && (EP.uMode != 6))
-        {
-            // Use only mode 6
-            continue;
-        }
+        //if ((flags & TEX_COMPRESS_BC7_QUICK) && (EP.uMode != 6))
+        //{
+        //    // Use only mode 6
+        //    continue;
+        //}
 
-        if ((!bHasAlpha) && (EP.uMode == 7))
-        {
-            // There is no value in using mode 7 for completely opaque blocks (the other 2 subset modes handle this case for opaque blocks), so skip it for a small perf win.
-            continue;
-        }
+        //if ((!bHasAlpha) && (EP.uMode == 7))
+        //{
+        //    // There is no value in using mode 7 for completely opaque blocks (the other 2 subset modes handle this case for opaque blocks), so skip it for a small perf win.
+        //    continue;
+        //}
+
+        //if (EP.uMode == 1)
+        //{
+        //    continue;
+        //}
+
+        //if (EP.uMode == 3)
+        //{
+        //    continue;
+        //}
 
         const size_t uShapes = size_t(1) << ms_aInfo[EP.uMode].uPartitionBits;
         assert(uShapes <= BC7_MAX_SHAPES);
